@@ -1,0 +1,57 @@
+services:
+
+  backend:
+    # .yml ファイルから見て ./api にある Dockerfile をイメージとしてビルド
+    build: ./backend
+    # コンテナ名
+    container_name: backend_c
+    # ローカルポート:コンテナポート
+    # localhost:4000でコンテナの4000が見られる
+    ports:
+      - 4000:4000
+    volumes:
+      # ローカルファイル:コンテナファイル
+      # バインドマウントなのでこの２つは連動する
+      - ./backend/src:/app/src
+    environment:
+      # 環境変数は ./backend/src/db.js 内で使っている
+      ENV: env_value
+      POSTGRES_USER: p_username
+      POSTGRES_PASSWORD: p_password
+      POSTGRES_DB: p_database
+    depends_on:
+      # db のコンテナが起動してから backend が起動する
+      - db
+  
+  frontend:
+    build: ./frontend
+    container_name: frontend_c
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend/src:/app/src
+    # --interactive
+    stdin_open: true
+    # --tty
+    tty: true
+  
+  db:
+    # Dockerfile からビルドせずイメージ名を直接指定
+    image: postgres:latest
+    container_name: db_c
+    environment:
+      POSTGRES_USER: p_username
+      POSTGRES_PASSWORD: p_password
+      POSTGRES_DB: p_database
+    ports:
+      - 5432:5432
+    volumes:
+      # バインドマウント
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # ボリュームマウント
+      - db_data:/var/lib/postgresql/data
+    # コンテナが常に再起動する（なくても動くような…）
+    restart: always
+
+volumes:
+  db_data:
